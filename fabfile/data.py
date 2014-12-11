@@ -4,6 +4,7 @@
 Commands that update or process the application data.
 """
 import codecs
+from collections import defaultdict
 import csv
 from datetime import datetime
 from glob import glob
@@ -90,7 +91,7 @@ def parse_transcript(row):
 
         text = ''
         for graph in paragraphs:
-            text += '\n %s' % graph.text_content()
+            text += '\n%s' % graph.text_content()
 
         f = codecs.open('data/text/%s.txt' % slug, 'w', encoding='utf-8')
         f.write(text)
@@ -102,52 +103,55 @@ def analyze_transcripts():
         _count_words(path)
 
 def _count_words(path):
-    IGNORED_WORDS = stopwords.words('english')
-    KILL_CHARS = ['.', ',', '"', '\xe2', '\x80', '\x93', '\r', '\n', '\xa6', '?', '\xc2', '\xa0', '\x9d', '\x99', '\x99', '\t', '\x9c', '\xc3', '\xb1']
-    DEATH_WORDS = ['\xe2\x80\x93']
-    EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr.']
-
     print path
-    word_count = {}
-    payload = {}
 
-    filename = path.split('/')[2]
+    IGNORED_WORDS = stopwords.words('english')
+    KILL_CHARS = ['.', ',', '"', '\xe2', '\x80', '\x93', '\r', '\n', '\xa6', '?', ':', '\xc2', '\xa0', '\x9d', '\x99', '\x99', '\t', '\x9c', '\xc3', '\xb1', '\x98', '\x91', '\xa9', '\xd1', '\x81', '\xa7', '\xa1', '\xaf', '\xe1', '\xb9', '\x85', '\xc5', '\x88', '\x94']
+    DEATH_WORDS = ['\xe2\x80\x93']
+    EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said']
+
+    word_count = defaultdict(int)
 
     with open(path, 'r') as f:
-        words = f.read().split(' ')
+        for line in f:
+            if line != '\n':
+                for word in line.split(' '):
+                    word = word.lower().strip()
 
-        for word in words:
-            word = word.strip()
-            word = word.lower()
+                    for death_word in DEATH_WORDS:
+                        if death_word in word:
+                            break
 
-            if word in IGNORED_WORDS:
-                continue
-            elif word == '':
-                continue
-            else:
+                    for kill_char in KILL_CHARS:
+                        word = word.replace(kill_char, '')
 
-                for kill_char in KILL_CHARS:
-                    word = word.replace(kill_char, '')
+                    word = word.decode('ascii')
 
-                for death_word in DEATH_WORDS:
-                    if death_word in word:
+                    if word == '':
                         break
 
-                if word not in word_count:
-                    word_count[word] = 1
-                else:
-                    word_count[word] += 1
+                    if word in IGNORED_WORDS:
+                        continue
+                    elif word in EXTRA_IGNORED_WORDS:
+                        continue
+                    else:
+                        word_count[word] += 1
 
-    sorted_word_count = sorted(word_count.items(), key=operator.itemgetter(1))
 
+    filename = path.split('/')[2]
     date = '%s-%s-%s' % (filename.split('-')[0], filename.split('-')[1], filename.split('-')[2])
-    payload[date] = {}
 
-    for k, v in sorted_word_count:
-        payload[date][k] = v
+    json_data = {'words': [], 'count': 0}
 
+    for item in sorted(word_count.items(), key=lambda word: word[1], reverse=True):
+        item_dict = {}
+        item_dict[item[0]] = item[1]
+        json_data['words'].append(item_dict)
+        json_data['count'] += 1
+
+    json_data = json.dumps(json_data, indent=4, sort_keys=True)
     with open('data/text/counts/%s.json' % date, 'w') as f:
-        f.write(json.dumps(unicode(payload), indent=4, sort_keys=True))
+        f.write(json_data)
 
 @task
 def update_featured_social():

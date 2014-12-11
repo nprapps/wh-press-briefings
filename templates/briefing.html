@@ -1,0 +1,12 @@
+{% extends '_base.html' %}
+
+{% block content %}
+
+<ul>
+    {% for word in briefing.words %}
+    {% for key, value in word.iteritems() %}
+    <li>{{ key }} = {{ value }}</li>
+    {% endfor %}
+    {% endfor %}
+</ul>
+{% endblock %}
