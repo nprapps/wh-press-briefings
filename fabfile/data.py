@@ -115,27 +115,28 @@ def _count_words(path):
     with open(path, 'r') as f:
         for line in f:
             if line != '\n':
-                for word in line.split(' '):
-                    word = word.lower().strip()
+                for first_word in line.split(' '):
+                    for word in first_word.split('.'):
+                        word = word.lower().strip()
 
-                    for death_word in DEATH_WORDS:
-                        if death_word in word:
+                        for death_word in DEATH_WORDS:
+                            if death_word in word:
+                                break
+
+                        for kill_char in KILL_CHARS:
+                            word = word.replace(kill_char, '')
+
+                        word = word.decode('ascii', 'ignore')
+
+                        if word == '':
                             break
 
-                    for kill_char in KILL_CHARS:
-                        word = word.replace(kill_char, '')
-
-                    word = word.decode('ascii', 'ignore')
-
-                    if word == '':
-                        break
-
-                    if word in IGNORED_WORDS:
-                        continue
-                    elif word in EXTRA_IGNORED_WORDS:
-                        continue
-                    else:
-                        word_count[word] += 1
+                        if word in IGNORED_WORDS:
+                            continue
+                        elif word in EXTRA_IGNORED_WORDS:
+                            continue
+                        else:
+                            word_count[word] += 1
 
 
     filename = path.split('/')[2]
