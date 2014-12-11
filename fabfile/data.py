@@ -106,9 +106,9 @@ def _count_words(path):
     print path
 
     IGNORED_WORDS = stopwords.words('english')
-    KILL_CHARS = ['.', ',', '"', '\xe2', '\x80', '\x93', '\r', '\n', '\xa6', '?', ':', '\xc2', '\xa0', '\x9d', '\x99', '\x99', '\t', '\x9c', '\xc3', '\xb1', '\x98', '\x91', '\xa9', '\xd1', '\x81', '\xa7', '\xa1', '\xaf', '\xe1', '\xb9', '\x85', '\xc5', '\x88', '\x94']
+    KILL_CHARS = [',', '"', '\r', '\n', '?', ':', '.']
     DEATH_WORDS = ['\xe2\x80\x93']
-    EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said']
+    EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said', 'american', 'united', 'states', 'think', 'well', 'im', 'people']
 
     word_count = defaultdict(int)
 
@@ -125,7 +125,7 @@ def _count_words(path):
                     for kill_char in KILL_CHARS:
                         word = word.replace(kill_char, '')
 
-                    word = word.decode('ascii')
+                    word = word.decode('ascii', 'ignore')
 
                     if word == '':
                         break
