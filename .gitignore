@@ -49,3 +49,4 @@ www/assets/*
 !www/assets/assetsignore
 
 press_briefing_cache
+data/text

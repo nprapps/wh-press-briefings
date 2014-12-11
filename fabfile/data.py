@@ -39,8 +39,6 @@ def update():
 
 @task
 def scrape_briefings():
-    os.remove('tmp/%s' % CSV_PATH)
-
     for index in range(0, 22):
         list = '%s?page=%i' % (ROOT_URL, index)
         print 'parsing %s' % list
@@ -52,7 +50,7 @@ def write_corpus(page):
     response = s.urlopen(page)
     doc = fromstring(response)
     list = doc.find_class('entry-list')[0]
-    writer = unicodecsv.writer(open('tmp/%s' % CSV_PATH, 'a'))
+    writer = unicodecsv.writer(open('data/%s' % CSV_PATH, 'a'))
     writer.writerow(['date', 'title', 'transcript_url'])
     for item in list.findall('li'):
         write_row(item, writer)
@@ -66,7 +64,7 @@ def write_row(row, writer):
         writer.writerow([date.text_content(), title.text_content(), href])
 
 def read_csv():
-    with open('tmp/%s' % CSV_PATH, 'rb') as f:
+    with open('data/%s' % CSV_PATH, 'rb') as f:
         reader = csv.DictReader(f, fieldnames=['date', 'title', 'transcript_url'])
         for row in reader:
             print row
@@ -113,7 +111,7 @@ def _count_words(path):
     word_count = {}
     payload = {}
 
-    filename = path.split('/')[1]
+    filename = path.split('/')[2]
 
     with open(path, 'r') as f:
         words = f.read().split(' ')
