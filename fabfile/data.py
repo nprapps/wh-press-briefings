@@ -107,7 +107,6 @@ def _count_words(path):
 
     IGNORED_WORDS = stopwords.words('english')
     KILL_CHARS = [',', '"', '\r', '\n', '?', ':', '.']
-    DEATH_WORDS = ['\xe2\x80\x93']
     EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said', 'american', 'united', 'states', 'think', 'well', 'im', 'people']
 
     word_count = defaultdict(int)
@@ -118,10 +117,6 @@ def _count_words(path):
                 for first_word in line.split(' '):
                     for word in first_word.split('.'):
                         word = word.lower().strip()
-
-                        for death_word in DEATH_WORDS:
-                            if death_word in word:
-                                break
 
                         for kill_char in KILL_CHARS:
                             word = word.replace(kill_char, '')

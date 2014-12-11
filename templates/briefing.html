@@ -2,11 +2,15 @@
 
 {% block content %}
 
-<ul>
+<h2>{{ date }}</h2>
+
+<p>Total "interesting" words: {{ briefing.count }}</p>
+
+<ol>
     {% for word in briefing.words %}
     {% for key, value in word.iteritems() %}
     <li>{{ key }} = {{ value }}</li>
     {% endfor %}
     {% endfor %}
-</ul>
+</ol>
 {% endblock %}

@@ -41,8 +41,12 @@ def briefing(slug):
 
     date = '%s-%s-%s' % (slug.split('-')[0], slug.split('-')[1], slug.split('-')[2])
 
+    context['date'] = date
+
     with open('data/text/counts/%s.json' % date) as f:
         context['briefing'] = json.load(f)
+
+    context['slug'] = slug
 
     return make_response(render_template('briefing.html', **context))
 
