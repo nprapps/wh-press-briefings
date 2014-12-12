@@ -91,7 +91,7 @@ def parse_transcript(row):
 
         text = ''
         for graph in paragraphs:
-            text += '\n%s' % graph.text_content()
+            text += '\n%s' % graph.text_content().strip()
 
         f = codecs.open('data/text/%s.txt' % slug, 'w', encoding='utf-8')
         f.write(text)
@@ -107,9 +107,10 @@ def _count_words(path):
 
     IGNORED_WORDS = stopwords.words('english')
     KILL_CHARS = [',', '"', '\r', '\n', '?', ':', '.']
-    EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said', 'american', 'united', 'states', 'think', 'well', 'im', 'people']
+    EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said', 'american', 'united', 'states', 'think', 'well', 'im', 'people', 'josh', 'earnestwell', 'presidents', 'country', 'also', 'thats', 'one', 'going', 'made', 'still', 'saying', 'really', 'white', 'jay']
 
-    word_count = defaultdict(int)
+    reporter_word_count = defaultdict(int)
+    secretary_word_count = defaultdict(int)
 
     with open(path, 'r') as f:
         for line in f:
@@ -131,19 +132,35 @@ def _count_words(path):
                         elif word in EXTRA_IGNORED_WORDS:
                             continue
                         else:
-                            word_count[word] += 1
+                            if line.startswith('Q'):
+                                reporter_word_count[word] += 1
+                            else:
+                                secretary_word_count[word] += 1
 
 
     filename = path.split('/')[2]
     date = '%s-%s-%s' % (filename.split('-')[0], filename.split('-')[1], filename.split('-')[2])
 
-    json_data = {'words': [], 'count': 0}
+    json_data = {
+        'reporters': {
+            'words': [], 'count': 0
+        },
+        'secretary': {
+            'words': [], 'count': 0
+        }
+    }
 
-    for item in sorted(word_count.items(), key=lambda word: word[1], reverse=True):
+    for item in sorted(reporter_word_count.items(), key=lambda word: word[1], reverse=True):
         item_dict = {}
         item_dict[item[0]] = item[1]
-        json_data['words'].append(item_dict)
-        json_data['count'] += 1
+        json_data['reporters']['words'].append(item_dict)
+        json_data['reporters']['count'] += 1
+
+    for item in sorted(secretary_word_count.items(), key=lambda word: word[1], reverse=True):
+        item_dict = {}
+        item_dict[item[0]] = item[1]
+        json_data['secretary']['words'].append(item_dict)
+        json_data['secretary']['count'] += 1
 
     json_data = json.dumps(json_data, indent=4, sort_keys=True)
     with open('data/text/counts/%s.json' % date, 'w') as f:

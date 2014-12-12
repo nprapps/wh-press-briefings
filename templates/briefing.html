@@ -4,13 +4,25 @@
 
 <h2>{{ date }}</h2>
 
-<p>Total "interesting" words: {{ briefing.count }}</p>
-
-<ol>
-    {% for word in briefing.words %}
-    {% for key, value in word.iteritems() %}
-    <li>{{ key }} = {{ value }}</li>
-    {% endfor %}
-    {% endfor %}
-</ol>
+<div class="row">
+    <div class="col-md-6 secretary">
+        <h3>Press Secretary</h3>
+        <ol>
+            {% for word in briefing.secretary.words %}
+            {% for key, value in word.iteritems() %}
+            <li>{{ key }} = {{ value }}</li>
+            {% endfor %}
+            {% endfor %}
+        </ol>
+    </div>
+    <div class="col-md-6 reporter">
+        <h3>Reporter questions</h3>
+        <ol>
+            {% for word in briefing.reporters.words %}
+            {% for key, value in word.iteritems() %}
+            <li>{{ key }} = {{ value }}</li>
+            {% endfor %}
+            {% endfor %}
+        </ol>
+    </div>
 {% endblock %}
