@@ -2,8 +2,23 @@
 
 {% block content %}
 
-<script type="text/javascript">
-    console.log({{ data|safe }});
-</script>
+<div class="row">
+    <div class="col-md-6">
+        <h2>Secretary usage</h2>
+        <ul>
+            {% for date, count in data.secretary_word_count.iteritems()|sort %}
+            <li>{{ date }}: {{ count }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="col-md-6">
+        <h2>Reporter usage</h2>
+        <ul>
+            {% for date, count in data.reporter_word_count.iteritems()|sort %}
+            <li>{{ date }}: {{ count }}</li>
+            {% endfor %}
+        </ul>
+    </div>
 
 {% endblock %}
