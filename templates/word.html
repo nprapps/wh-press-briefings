@@ -2,23 +2,24 @@
 
 {% block content %}
 
-<div class="row">
-    <div class="col-md-6">
-        <h2>Secretary usage</h2>
-        <ul>
-            {% for date, count in data.secretary_word_count.iteritems()|sort %}
-            <li>{{ date }}: {{ count }}</li>
-            {% endfor %}
-        </ul>
-    </div>
+<table class="table table-striped sortable">
+    <thead>
+        <th>Date</th>
+        <th>Secretary</th>
+        <th>Reporter</th>
+        <th>Diff</th>
+    </thead>
+    <tbody>
+        {% for date in data|sort %}
+        <tr>
+            <td>{{ date }}</td>
+            <td>{{ data[date].secretary }}</td>
+            <td>{{ data[date].reporter }}</td>
+            <td>{{ data[date].secretary - data[date].reporter }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-    <div class="col-md-6">
-        <h2>Reporter usage</h2>
-        <ul>
-            {% for date, count in data.reporter_word_count.iteritems()|sort %}
-            <li>{{ date }}: {{ count }}</li>
-            {% endfor %}
-        </ul>
-    </div>
 
 {% endblock %}

@@ -54,18 +54,16 @@ def briefing(slug):
 def word(slug):
     context = make_context()
 
-    data = {
-        'reporter_word_count': {},
-        'secretary_word_count': {}
-    }
+    data = {}
 
     for file in glob('data/text/counts/*.json'):
         with open(file) as f:
             transcript_data = json.load(f)
 
             date = file.split('/')[3].split('.')[0]
-            data['reporter_word_count'][date] = 0
-            data['secretary_word_count'][date] = 0
+            data[date] = {}
+            data[date]['reporter'] = 0
+            data[date]['secretary'] = 0
 
             reporter_words = transcript_data['reporters']['words']
             secretary_words = transcript_data['secretary']['words']
@@ -73,15 +71,16 @@ def word(slug):
             for word in reporter_words:
                 for k, v in word.iteritems():
                     if k == slug:
-                        data['reporter_word_count'][date] = v
+                        data[date]['reporter'] = v
                         break
 
             for word in secretary_words:
                 for k, v in word.iteritems():
                     if k == slug:
-                        data['secretary_word_count'][date] = v
+                        data[date]['secretary'] = v
                         break
 
+    print data
     context['data'] = data
 
     return make_response(render_template('word.html', **context))
