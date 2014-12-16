@@ -5,24 +5,12 @@
 <h2>{{ date }}</h2>
 
 <div class="row">
-    <div class="col-md-6 secretary">
-        <h3>Press Secretary</h3>
+    <div class="col-md-6">
         <ol>
-            {% for word in briefing.secretary.words %}
-            {% for key, value in word.iteritems() %}
-            <li>{{ key }} = {{ value }}</li>
-            {% endfor %}
+            {% for word in briefing.words|dictsort(false, 'value')|reverse %}
+            <li>{{ word[0] }} = {{ word[1] }}</li>
             {% endfor %}
         </ol>
     </div>
-    <div class="col-md-6 reporter">
-        <h3>Reporter questions</h3>
-        <ol>
-            {% for word in briefing.reporters.words %}
-            {% for key, value in word.iteritems() %}
-            <li>{{ key }} = {{ value }}</li>
-            {% endfor %}
-            {% endfor %}
-        </ol>
-    </div>
+</div>
 {% endblock %}

@@ -26,7 +26,9 @@ import unicodecsv
 import app_config
 import copytext
 
-SEARCH_TERMS = ['ebola', 'isis', 'isil', 'islamic', 'state', 'ukraine', 'crimea', 'secret', 'service', 'syria', 'unemployment', 'keystone']
+SEARCH_TERMS = ['benghazi']
+
+# 'ukraine', 'crimea', 'secret', 'service', 'ebola' 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic', 'syria', 'veterans', 'shinseki', 'benghazi'
 
 ROOT_URL = 'http://www.whitehouse.gov/briefing-room/press-briefings'
 CSV_PATH = 'briefing_links.csv'
@@ -113,8 +115,7 @@ def _count_words(path):
     KILL_CHARS = [',', '"', '\r', '\n', '?', ':', '.']
     EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said', 'american', 'united', 'states', 'think', 'well', 'im', 'people', 'josh', 'earnestwell', 'presidents', 'country', 'also', 'thats', 'one', 'going', 'made', 'still', 'saying', 'really', 'white', 'jay']
 
-    reporter_word_count = defaultdict(int)
-    secretary_word_count = defaultdict(int)
+    word_count = defaultdict(int)
 
     with open(path, 'r') as f:
         for line in f:
@@ -136,31 +137,18 @@ def _count_words(path):
                         elif word in EXTRA_IGNORED_WORDS:
                             continue
                         else:
-                            if line.startswith('Q'):
-                                reporter_word_count[word] += 1
-                            else:
-                                secretary_word_count[word] += 1
+                            word_count[word] += 1
 
 
     filename = path.split('/')[2]
     date = '%s-%s-%s' % (filename.split('-')[0], filename.split('-')[1], filename.split('-')[2])
 
     json_data = {
-        'reporters': {
-            'words': {}, 'count': 0
-        },
-        'secretary': {
-            'words': {}, 'count': 0
-        }
+        'words': {}, 'count': 0
     }
 
-    for item in sorted(reporter_word_count.items(), key=lambda word: word[1], reverse=True):
-        json_data['reporters']['words'][item[0]] = item[1]
-        json_data['reporters']['count'] += 1
-
-    for item in sorted(secretary_word_count.items(), key=lambda word: word[1], reverse=True):
-        json_data['secretary']['words'][item[0]] = item[1]
-        json_data['secretary']['count'] += 1
+    for item in sorted(word_count.items(), key=lambda word: word[1], reverse=True):
+        json_data['words'][item[0]] = item[1]
 
     json_data = json.dumps(json_data, indent=4, sort_keys=True)
     with open('data/text/counts/%s.json' % date, 'w') as f:
@@ -177,10 +165,7 @@ def _generate_word_summary():
 
     for sunday in all_sundays(2014):
         sunday_str = sunday.strftime('%Y-%m-%d')
-        output[sunday_str] = { 
-            'reporters': defaultdict(int),
-            'secretary': defaultdict(int)
-        }
+        output[sunday_str] = defaultdict(int)
 
     for path in glob('data/text/counts/*.json'):
         directory, filename = os.path.split(path)
@@ -200,11 +185,8 @@ def _generate_word_summary():
             data = json.load(f)
 
             for word in SEARCH_TERMS:
-                reporter_count = data['reporters']['words'].get(word, 0)
-                output[sunday]['reporters'][word] += reporter_count
-
-                secretary_count = data['secretary']['words'].get(word, 0)
-                output[sunday]['secretary'][word] += secretary_count
+                count = data['words'].get(word, 0)
+                output[sunday][word] += count
 
             with open('data/text/summary/2014.json', 'w') as f:
                 f.write(json.dumps(output))
@@ -221,7 +203,7 @@ def get_trend_data():
     API_URL = 'https://www.googleapis.com/discovery/v1/apis/trends/v1beta/rest'
 
     service = build(
-        'trends', 
+        'trends',
         'v1beta',
         developerKey='AIzaSyDL03r4uRooHOZyg9v_arRX4GKrkPf4elw',
         discoveryServiceUrl=API_URL
@@ -230,7 +212,7 @@ def get_trend_data():
     startDate = '2014-01'
     endDate = '2014-12'
     response = service.getGraph(
-        terms=SEARCH_TERMS, 
+        terms=SEARCH_TERMS,
         restrictions_startDate=startDate,
         restrictions_endDate=endDate
     ).execute()
@@ -260,20 +242,15 @@ def merge_count_data():
         google_trends = json.load(g)
 
     for word in SEARCH_TERMS:
-        with open('data/text/summary/%s.csv' % word, 'w') as f:    
+        with open('data/text/summary/%s.csv' % word, 'w') as f:
             writer = csv.writer(f)
-            writer.writerow(['Week', 'Reporters', 'Secretary', 'Google Trends'])
+            writer.writerow(['Week', 'Count', 'Google Trends'])
 
             for sunday in all_sundays(2014):
                 sunday = sunday.strftime('%Y-%m-%d')
-                reporters = press_briefings[sunday]['reporters'].get(word, 0)
-                secretary = press_briefings[sunday]['secretary'].get(word, 0)
+                count = press_briefings[sunday].get(word, 0)
                 google = google_trends[sunday].get(word, 0)
-
-                writer.writerow([sunday, reporters, secretary, google])
-
-
-
+                writer.writerow([sunday, count, google])
 
 @task
 def update_featured_social():

@@ -36,7 +36,7 @@ def index():
     return make_response(render_template('index.html', **context))
 
 @app.route('/briefing/<string:slug>/')
-def briefing(slug):
+def _briefing(slug):
     context = make_context()
 
     date = '%s-%s-%s' % (slug.split('-')[0], slug.split('-')[1], slug.split('-')[2])
@@ -51,7 +51,7 @@ def briefing(slug):
     return make_response(render_template('briefing.html', **context))
 
 @app.route('/word/<string:slug>/')
-def word(slug):
+def _word(slug):
     context = make_context()
 
     data = {}
@@ -62,8 +62,6 @@ def word(slug):
 
             date = file.split('/')[3].split('.')[0]
             data[date] = {}
-            data[date]['reporter'] = 0
-            data[date]['secretary'] = 0
 
             reporter_words = transcript_data['reporters']['words']
             reporter_count = transcript_data['reporters']['count']
