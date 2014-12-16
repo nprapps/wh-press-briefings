@@ -96,7 +96,7 @@ def render_all():
     app_config_js()
     copytext_js()
 
-    compiled_includes = {} 
+    compiled_includes = {}
 
     # Loop over all views in the app
     for rule in app.app.url_map.iter_rules():
@@ -141,3 +141,35 @@ def render_all():
         with open(filename, 'w') as f:
             f.write(content)
 
+    render_briefings(compiled_includes)
+
+@task
+def render_briefings(compiled_includes):
+    from flask import g, url_for
+
+    for path in glob('data/text/*.txt'):
+        directory, filename = os.path.split(path)
+        slug, extension = os.path.splitext(filename)
+
+        with app.app.test_request_context():
+            path = '%sindex.html' % url_for('_briefing', slug=slug)
+
+        with app.app.test_request_context(path=path):
+            print 'Rendering %s' % path
+
+            g.compile_includes = True
+            g.compiled_includes = compiled_includes
+
+            view = app.__dict__['_briefing']
+            content = view(slug)
+
+        output_path = '.briefings_html%s' % path
+        head = os.path.split(output_path)[0]
+
+        try:
+            os.makedirs(head)
+        except OSError:
+            pass
+
+        with open(output_path, 'w') as f:
+            f.write(content.data.encode('utf-8'))

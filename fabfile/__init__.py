@@ -166,6 +166,12 @@ def deploy(remote='origin'):
     )
 
     flat.deploy_folder(
+        '.briefings_html',
+        app_config.PROJECT_SLUG,
+        max_age=app_config.DEFAULT_MAX_AGE,
+    )
+
+    flat.deploy_folder(
         'www/assets',
         '%s/assets' % app_config.PROJECT_SLUG,
         max_age=app_config.ASSETS_MAX_AGE
@@ -192,7 +198,7 @@ def shiva_the_destroyer():
     )
 
     with settings(warn_only=True):
-        flat.delete_folder(app_config.PROJECT_SLUG) 
+        flat.delete_folder(app_config.PROJECT_SLUG)
 
         if app_config.DEPLOY_TO_SERVERS:
             servers.delete_project()
