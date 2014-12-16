@@ -66,7 +66,12 @@ def word(slug):
             data[date]['secretary'] = 0
 
             reporter_words = transcript_data['reporters']['words']
+            reporter_count = transcript_data['reporters']['count']
             secretary_words = transcript_data['secretary']['words']
+            secretary_count = transcript_data['secretary']['count']
+
+            data[date]['reporter_count'] = reporter_count
+            data[date]['secretary_count'] = secretary_count
 
             for word in reporter_words:
                 for k, v in word.iteritems():
@@ -80,7 +85,6 @@ def word(slug):
                         data[date]['secretary'] = v
                         break
 
-    print data
     context['data'] = data
 
     return make_response(render_template('word.html', **context))

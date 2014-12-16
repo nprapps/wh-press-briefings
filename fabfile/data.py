@@ -6,16 +6,18 @@ Commands that update or process the application data.
 import codecs
 from collections import defaultdict
 import csv
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from glob import glob
 import json
 import operator
 import os
 
+from apiclient.discovery import build
 from fabric.api import task
 from facebook import GraphAPI
 from lxml.html import fromstring
 from nltk.corpus import stopwords
+from pprint import pprint
 from scrapelib import Scraper, FileCache
 from slugify import slugify
 from twitter import Twitter, OAuth
@@ -23,6 +25,8 @@ import unicodecsv
 
 import app_config
 import copytext
+
+SEARCH_TERMS = ['ebola', 'isis', 'isil', 'islamic', 'state', 'ukraine', 'crimea', 'secret', 'service', 'syria', 'unemployment', 'keystone']
 
 ROOT_URL = 'http://www.whitehouse.gov/briefing-room/press-briefings'
 CSV_PATH = 'briefing_links.csv'
@@ -143,28 +147,133 @@ def _count_words(path):
 
     json_data = {
         'reporters': {
-            'words': [], 'count': 0
+            'words': {}, 'count': 0
         },
         'secretary': {
-            'words': [], 'count': 0
+            'words': {}, 'count': 0
         }
     }
 
     for item in sorted(reporter_word_count.items(), key=lambda word: word[1], reverse=True):
-        item_dict = {}
-        item_dict[item[0]] = item[1]
-        json_data['reporters']['words'].append(item_dict)
+        json_data['reporters']['words'][item[0]] = item[1]
         json_data['reporters']['count'] += 1
 
     for item in sorted(secretary_word_count.items(), key=lambda word: word[1], reverse=True):
-        item_dict = {}
-        item_dict[item[0]] = item[1]
-        json_data['secretary']['words'].append(item_dict)
+        json_data['secretary']['words'][item[0]] = item[1]
         json_data['secretary']['count'] += 1
 
     json_data = json.dumps(json_data, indent=4, sort_keys=True)
     with open('data/text/counts/%s.json' % date, 'w') as f:
         f.write(json_data)
+
+@task
+def analyze_words():
+    _generate_word_summary()
+    get_trend_data()
+    merge_count_data()
+
+def _generate_word_summary():
+    output = {}
+
+    for sunday in all_sundays(2014):
+        sunday_str = sunday.strftime('%Y-%m-%d')
+        output[sunday_str] = { 
+            'reporters': defaultdict(int),
+            'secretary': defaultdict(int)
+        }
+
+    for path in glob('data/text/counts/*.json'):
+        directory, filename = os.path.split(path)
+        date, extension = os.path.splitext(filename)
+
+        d = datetime.strptime(date, '%m-%d-%y')
+
+        if d.year != 2014:
+            continue
+
+        while d.weekday() != 6:
+            d = d - timedelta(days=1)
+
+        sunday = d.strftime('%Y-%m-%d')
+
+        with open(path, 'r') as f:
+            data = json.load(f)
+
+            for word in SEARCH_TERMS:
+                reporter_count = data['reporters']['words'].get(word, 0)
+                output[sunday]['reporters'][word] += reporter_count
+
+                secretary_count = data['secretary']['words'].get(word, 0)
+                output[sunday]['secretary'][word] += secretary_count
+
+            with open('data/text/summary/2014.json', 'w') as f:
+                f.write(json.dumps(output))
+
+def all_sundays(year):
+    d = date(year, 1, 1)                    # January 1st
+    d += timedelta(days = 6 - d.weekday())  # First Sunday
+    while d.year == year:
+        yield d
+        d += timedelta(days = 7)
+
+@task
+def get_trend_data():
+    API_URL = 'https://www.googleapis.com/discovery/v1/apis/trends/v1beta/rest'
+
+    service = build(
+        'trends', 
+        'v1beta',
+        developerKey='AIzaSyDL03r4uRooHOZyg9v_arRX4GKrkPf4elw',
+        discoveryServiceUrl=API_URL
+    )
+
+    startDate = '2014-01'
+    endDate = '2014-12'
+    response = service.getGraph(
+        terms=SEARCH_TERMS, 
+        restrictions_startDate=startDate,
+        restrictions_endDate=endDate
+    ).execute()
+
+    output = {}
+
+    for line in response['lines']:
+        word = line['term']
+        for point in line['points']:
+            date = point['date']
+            value = point['value']
+
+            if date not in output:
+                output[date] = {}
+
+            output[date][word] = value
+
+    with open('data/text/summary/google.json', 'w') as f:
+        f.write(json.dumps(output))
+
+@task
+def merge_count_data():
+    with open('data/text/summary/2014.json', 'r') as wh:
+        press_briefings = json.load(wh)
+
+    with open('data/text/summary/google.json', 'r') as g:
+        google_trends = json.load(g)
+
+    for word in SEARCH_TERMS:
+        with open('data/text/summary/%s.csv' % word, 'w') as f:    
+            writer = csv.writer(f)
+            writer.writerow(['Week', 'Reporters', 'Secretary', 'Google Trends'])
+
+            for sunday in all_sundays(2014):
+                sunday = sunday.strftime('%Y-%m-%d')
+                reporters = press_briefings[sunday]['reporters'].get(word, 0)
+                secretary = press_briefings[sunday]['secretary'].get(word, 0)
+                google = google_trends[sunday].get(word, 0)
+
+                writer.writerow([sunday, reporters, secretary, google])
+
+
+
 
 @task
 def update_featured_social():
