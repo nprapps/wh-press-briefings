@@ -40,3 +40,4 @@ lxml==3.4.1
 scrapelib==0.10.0
 slugify==0.0.1
 unicodecsv==0.9.4
+xlwt==0.7.5

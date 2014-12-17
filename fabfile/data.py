@@ -9,7 +9,6 @@ import csv
 from datetime import datetime, date, timedelta
 from glob import glob
 import json
-import operator
 import os
 
 from apiclient.discovery import build
@@ -17,7 +16,6 @@ from fabric.api import task
 from facebook import GraphAPI
 from lxml.html import fromstring
 from nltk.corpus import stopwords
-from pprint import pprint
 from scrapelib import Scraper, FileCache
 from slugify import slugify
 from twitter import Twitter, OAuth
@@ -26,9 +24,7 @@ import unicodecsv
 import app_config
 import copytext
 
-SEARCH_TERMS = ['benghazi']
-
-# 'ukraine', 'crimea', 'secret', 'service', 'ebola' 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic', 'syria', 'veterans', 'shinseki', 'benghazi'
+SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola' 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'care', 'threat' 'immigration', 'border', 'minors', 'unaccompanied', 'economy', 'economic', 'strategy', 'sanctions', 'executive', 'action', 'order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'isreal', 'isreali', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'obamacare', 'palestine', 'palestinian', 'girls'])
 
 ROOT_URL = 'http://www.whitehouse.gov/briefing-room/press-briefings'
 CSV_PATH = 'briefing_links.csv'
@@ -209,26 +205,29 @@ def get_trend_data():
         discoveryServiceUrl=API_URL
     )
 
-    startDate = '2014-01'
-    endDate = '2014-12'
-    response = service.getGraph(
-        terms=SEARCH_TERMS,
-        restrictions_startDate=startDate,
-        restrictions_endDate=endDate
-    ).execute()
+    for group_of_five in [SEARCH_TERMS[i:i+5] for i in range(0, len(SEARCH_TERMS), 5)]:
+        print 'Googling: %s' % group_of_five
 
-    output = {}
+        startDate = '2014-01'
+        endDate = '2014-12'
+        response = service.getGraph(
+            terms=group_of_five,
+            restrictions_startDate=startDate,
+            restrictions_endDate=endDate
+        ).execute()
 
-    for line in response['lines']:
-        word = line['term']
-        for point in line['points']:
-            date = point['date']
-            value = point['value']
+        output = {}
 
-            if date not in output:
-                output[date] = {}
+        for line in response['lines']:
+            word = line['term']
+            for point in line['points']:
+                date = point['date']
+                value = point['value']
 
-            output[date][word] = value
+                if date not in output:
+                    output[date] = {}
+
+                output[date][word] = value
 
     with open('data/text/summary/google.json', 'w') as f:
         f.write(json.dumps(output))
@@ -241,16 +240,29 @@ def merge_count_data():
     with open('data/text/summary/google.json', 'r') as g:
         google_trends = json.load(g)
 
-    for word in SEARCH_TERMS:
-        with open('data/text/summary/%s.csv' % word, 'w') as f:
-            writer = csv.writer(f)
-            writer.writerow(['Week', 'Count', 'Google Trends'])
+    from xlwt import Workbook
+    
+    book = Workbook()
 
-            for sunday in all_sundays(2014):
-                sunday = sunday.strftime('%Y-%m-%d')
-                count = press_briefings[sunday].get(word, 0)
-                google = google_trends[sunday].get(word, 0)
-                writer.writerow([sunday, count, google])
+    for word in SEARCH_TERMS:
+        sheet = book.add_sheet(word)
+
+        header = sheet.row(0)
+
+        for i, col in enumerate(['Week', 'Count', 'Google Trends']):
+            header.write(i, col)
+
+        for i, sunday in enumerate(all_sundays(2014)):
+            row = sheet.row(i + 1)
+
+            sunday = sunday.strftime('%Y-%m-%d')
+            count = press_briefings[sunday].get(word, 0)
+            google = google_trends[sunday].get(word, 0)
+
+            for i, col in enumerate([sunday, count, google]):
+                row.write(i, col)
+
+    book.save('data/text/summary/terms.xls')
 
 @task
 def update_featured_social():
