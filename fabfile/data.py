@@ -24,7 +24,7 @@ import unicodecsv
 import app_config
 import copytext
 
-SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola' 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'care', 'threat' 'immigration', 'border', 'minors', 'unaccompanied', 'economy', 'economic', 'strategy', 'sanctions', 'executive', 'action', 'order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'isreal', 'isreali', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'obamacare', 'palestine', 'palestinian', 'girls'])
+SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola', 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'care', 'threat' 'immigration', 'border', 'minors', 'unaccompanied', 'economy', 'economic', 'strategy', 'sanctions', 'executive', 'action', 'order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'isreal', 'isreali', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'obamacare', 'palestine', 'palestinian', 'girls'])
 
 ROOT_URL = 'http://www.whitehouse.gov/briefing-room/press-briefings'
 CSV_PATH = 'briefing_links.csv'
@@ -205,7 +205,9 @@ def get_trend_data():
         discoveryServiceUrl=API_URL
     )
 
-    for group_of_five in [SEARCH_TERMS[i:i+5] for i in range(0, len(SEARCH_TERMS), 5)]:
+    output = {}
+
+    for group_of_five in [SEARCH_TERMS[i:i+4] for i in range(0, len(SEARCH_TERMS), 5)]:
         print 'Googling: %s' % group_of_five
 
         startDate = '2014-01'
@@ -216,10 +218,10 @@ def get_trend_data():
             restrictions_endDate=endDate
         ).execute()
 
-        output = {}
 
         for line in response['lines']:
             word = line['term']
+
             for point in line['points']:
                 date = point['date']
                 value = point['value']
@@ -258,6 +260,7 @@ def merge_count_data():
             sunday = sunday.strftime('%Y-%m-%d')
             count = press_briefings[sunday].get(word, 0)
             google = google_trends[sunday].get(word, 0)
+            print google
 
             for i, col in enumerate([sunday, count, google]):
                 row.write(i, col)
