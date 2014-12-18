@@ -10,12 +10,13 @@ from datetime import datetime, date, timedelta
 from glob import glob
 import json
 import os
+from time import sleep
 
 from apiclient.discovery import build
 from fabric.api import task
 from facebook import GraphAPI
 from lxml.html import fromstring
-from nltk.corpus import stopwords
+import nltk
 from scrapelib import Scraper, FileCache
 from slugify import slugify
 from twitter import Twitter, OAuth
@@ -24,7 +25,7 @@ import unicodecsv
 import app_config
 import copytext
 
-SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola', 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'care', 'threat' 'immigration', 'border', 'minors', 'unaccompanied', 'economy', 'economic', 'strategy', 'sanctions', 'executive', 'action', 'order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'isreal', 'isreali', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'obamacare', 'palestine', 'palestinian', 'girls'])
+SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola', 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic state', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'threat' 'immigration', 'border', 'unaccompanied minors', 'economy', 'economic', 'strategy', 'sanctions', 'executive action', 'executive order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable care act', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'isreal', 'isreali', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'obamacare', 'palestine', 'palestinian', 'girls'])
 
 ROOT_URL = 'http://www.whitehouse.gov/briefing-room/press-briefings'
 CSV_PATH = 'briefing_links.csv'
@@ -107,48 +108,33 @@ def analyze_transcripts():
 def _count_words(path):
     print path
 
-    IGNORED_WORDS = stopwords.words('english')
-    KILL_CHARS = [',', '"', '\r', '\n', '?', ':', '.']
-    EXTRA_IGNORED_WORDS = ['q', 'carney', 'earnest', 'president', 'mr', '--', 'would', 'said', 'american', 'united', 'states', 'think', 'well', 'im', 'people', 'josh', 'earnestwell', 'presidents', 'country', 'also', 'thats', 'one', 'going', 'made', 'still', 'saying', 'really', 'white', 'jay']
-
     word_count = defaultdict(int)
 
     with open(path, 'r') as f:
-        for line in f:
-            if line != '\n':
-                for first_word in line.split(' '):
-                    for word in first_word.split('.'):
-                        word = word.lower().strip()
+        tokens = nltk.word_tokenize(f.read().decode('utf-8').lower())
 
-                        for kill_char in KILL_CHARS:
-                            word = word.replace(kill_char, '')
+    word_counts = nltk.FreqDist(tokens)
 
-                        word = word.decode('ascii', 'ignore')
+    for word, count in word_counts.items():
+        word_count[word] += 1
+    
+    bigrams = nltk.bigrams(tokens)
+    bigram_counts = nltk.FreqDist(bigrams)
 
-                        if word == '':
-                            break
+    for bigram, count in bigram_counts.items():
+        word_count['%s %s' % bigram] = count
 
-                        if word in IGNORED_WORDS:
-                            continue
-                        elif word in EXTRA_IGNORED_WORDS:
-                            continue
-                        else:
-                            word_count[word] += 1
+    trigrams = nltk.trigrams(tokens)
+    trigram_counts = nltk.FreqDist(trigrams)
 
+    for trigram, count in trigram_counts.items():
+        word_count['%s %s %s' % trigram] = count
 
     filename = path.split('/')[2]
-    date = '%s-%s-%s' % (filename.split('-')[0], filename.split('-')[1], filename.split('-')[2])
+    count_date = '%s-%s-%s' % (filename.split('-')[0], filename.split('-')[1], filename.split('-')[2])
 
-    json_data = {
-        'words': {}, 'count': 0
-    }
-
-    for item in sorted(word_count.items(), key=lambda word: word[1], reverse=True):
-        json_data['words'][item[0]] = item[1]
-
-    json_data = json.dumps(json_data, indent=4, sort_keys=True)
-    with open('data/text/counts/%s.json' % date, 'w') as f:
-        f.write(json_data)
+    with open('data/text/counts/%s.json' % count_date, 'w') as f:
+        json.dump({ 'words': word_count }, f)
 
 @task
 def analyze_words():
@@ -207,7 +193,7 @@ def get_trend_data():
 
     output = {}
 
-    for group_of_five in [SEARCH_TERMS[i:i+4] for i in range(0, len(SEARCH_TERMS), 5)]:
+    for group_of_five in [SEARCH_TERMS[i:i+5] for i in range(0, len(SEARCH_TERMS), 5)]:
         print 'Googling: %s' % group_of_five
 
         startDate = '2014-01'
@@ -215,9 +201,9 @@ def get_trend_data():
         response = service.getGraph(
             terms=group_of_five,
             restrictions_startDate=startDate,
-            restrictions_endDate=endDate
+            restrictions_endDate=endDate,
+            restrictions_geo='US'
         ).execute()
-
 
         for line in response['lines']:
             word = line['term']
@@ -230,6 +216,8 @@ def get_trend_data():
                     output[date] = {}
 
                 output[date][word] = value
+
+        sleep(10)
 
     with open('data/text/summary/google.json', 'w') as f:
         f.write(json.dumps(output))
