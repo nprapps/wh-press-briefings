@@ -33,6 +33,7 @@ SEARCH_TERMS = sorted([
     'veteran',
     'veterans',
     'shinseki',
+    'va',
 
     'affordable care act',
     'obamacare',
@@ -60,7 +61,7 @@ SEARCH_TERMS = sorted([
 
 SYNONYMS = [
     ('isis', 'isil', 'islamic state'),
-    ('veteran', 'veterans', 'shinseki'),
+    ('veteran', 'veterans', 'shinseki', 'va'),
     ('affordable care act', 'obamacare', 'healthcare', 'health care', 'insurance'),
     ('ukraine', 'ukrainian', 'crimea'),
     ('unemployed', 'unemployment')
