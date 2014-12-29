@@ -161,7 +161,7 @@ def render_briefings(compiled_includes):
             g.compiled_includes = compiled_includes
 
             view = app.__dict__['_briefing']
-            content = view(slug)
+            content = view(slug).data
 
         output_path = '.briefings_html%s' % path
         head = os.path.split(output_path)[0]
@@ -172,4 +172,4 @@ def render_briefings(compiled_includes):
             pass
 
         with open(output_path, 'w') as f:
-            f.write(content.data.encode('utf-8'))
+            f.write(content)
