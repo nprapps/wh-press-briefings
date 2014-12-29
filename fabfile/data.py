@@ -25,7 +25,46 @@ import unicodecsv
 import app_config
 import copytext
 
-SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola', 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic state', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'threat' 'immigration', 'border', 'unaccompanied minors', 'economy', 'economic', 'strategy', 'sanctions', 'executive action', 'executive order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable care act', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'isreal', 'isreali', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'obamacare', 'palestine', 'palestinian', 'girls'])
+SEARCH_TERMS = sorted([
+    'isis',
+    'isil',
+    'islamic state',
+
+    'veteran',
+    'veterans',
+    'shinseki',
+
+    'affordable care act',
+    'obamacare',
+    'healthcare',
+    'health care',
+    'insurance',
+
+    'ukraine',
+    'ukrainian',
+    'crimea',
+
+    'ebola',
+
+    'border',
+    'immigration',
+    'unaccompanied minors'
+])
+
+#SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola', 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic state', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'threat', 'immigration', 'border', 'unaccompanied minors', 'economy', 'economic', 'strategy', 'sanctions', 'executive action', 'executive order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable care act', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'israel', 'israeli', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'health care', 'obamacare', 'palestine', 'palestinian', 'girls'])
+
+SYNONYMS = [
+    ('isis', 'isil', 'islamic state'),
+    ('veteran', 'veterans', 'shinseki'),
+    ('affordable care act', 'obamacare', 'healthcare', 'health care', 'insurance'),
+    ('ukraine', 'ukrainian', 'crimea')
+]
+    
+    #('palestine', 'palestinians'),
+    #('israel', 'israeli', 'palestine', 'palestinians'),
+    #('iraq', 'iraqis', 'iraqs'),
+    #('executive order', 'executive action'),
+    #('economy', 'economic'),
 
 ROOT_URL = 'http://www.whitehouse.gov/briefing-room/press-briefings'
 CSV_PATH = 'briefing_links.csv'
@@ -116,7 +155,7 @@ def _count_words(path):
     word_counts = nltk.FreqDist(tokens)
 
     for word, count in word_counts.items():
-        word_count[word] += 1
+        word_count[word] = count 
     
     bigrams = nltk.bigrams(tokens)
     bigram_counts = nltk.FreqDist(bigrams)
@@ -139,8 +178,9 @@ def _count_words(path):
 @task
 def analyze_words():
     _generate_word_summary()
-    get_trend_data()
+    #get_trend_data()
     merge_count_data()
+    merge_synonym_counts()
 
 def _generate_word_summary():
     output = {}
@@ -239,7 +279,7 @@ def merge_count_data():
 
         header = sheet.row(0)
 
-        for i, col in enumerate(['Week', 'Count', 'Google Trends']):
+        for i, col in enumerate(['Week', 'Count']):
             header.write(i, col)
 
         for i, sunday in enumerate(all_sundays(2014)):
@@ -247,13 +287,47 @@ def merge_count_data():
 
             sunday = sunday.strftime('%Y-%m-%d')
             count = press_briefings[sunday].get(word, 0)
-            google = google_trends[sunday].get(word, 0)
-            print google
-
-            for i, col in enumerate([sunday, count, google]):
+            #google = google_trends[sunday].get(word, 0)
+            
+            for i, col in enumerate([sunday, count]):
                 row.write(i, col)
 
     book.save('data/text/summary/terms.xls')
+
+@task
+def merge_synonym_counts():
+    """
+    Merge counts for synonyms.
+    """
+    with open('data/text/summary/2014.json', 'r') as wh:
+        press_briefings = json.load(wh)
+
+    from xlwt import Workbook
+
+    book = Workbook()
+
+    for synonyms in SYNONYMS:
+        sheet = book.add_sheet('%s (+%i)' % (synonyms[0], len(synonyms)))
+
+        header = sheet.row(0)
+
+        for i, col in enumerate(['Week', 'Count']):
+            header.write(i, col)
+
+        for i, sunday in enumerate(all_sundays(2014)):
+            row = sheet.row(i + 1)
+
+            sunday = sunday.strftime('%Y-%m-%d')
+
+            count = 0
+
+            for word in synonyms:
+                count += press_briefings[sunday].get(word, 0)
+            
+            for i, col in enumerate([sunday, count]):
+                row.write(i, col)
+
+    book.save('data/text/summary/synonyms.xls')
 
 @task
 def update_featured_social():
