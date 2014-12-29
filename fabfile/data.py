@@ -48,7 +48,12 @@ SEARCH_TERMS = sorted([
 
     'border',
     'immigration',
-    'unaccompanied minors'
+    'unaccompanied minors',
+
+    'position',
+
+    'unemployed',
+    'unemployment'
 ])
 
 #SEARCH_TERMS = sorted(['ukraine', 'crimea', 'secret', 'service', 'ebola', 'unemployment', 'keystone', 'ferguson', 'iraq', 'isil', 'isis', 'islamic state', 'military', 'republicans', 'russia', 'syria', 'veterans', 'shinseki', 'benghazi', 'threat', 'immigration', 'border', 'unaccompanied minors', 'economy', 'economic', 'strategy', 'sanctions', 'executive action', 'executive order', 'iraqi', 'iran', 'russian', 'intelligence', 'ukrainian', 'bipartisan', 'africa', 'affordable care act', 'budget', 'insurance', 'jobs', 'humanitarian', 'syrian', 'troops', 'cdc', 'comprehensive', 'afghanistan', 'china', 'putin', 'war', 'enforcement', 'confidence', 'veteran', 'nuclear', 'outbreak', 'airstrikes', 'ambassador', 'fighters', 'russians', 'qaeda', 'pay', 'iraqs', 'wage', 'confront', 'combat', 'israel', 'israeli', 'climate', 'terrorist', 'separatists', 'counterterrorism', 'assad', 'cease-fire', 'healthcare', 'health care', 'obamacare', 'palestine', 'palestinian', 'girls'])
@@ -57,7 +62,8 @@ SYNONYMS = [
     ('isis', 'isil', 'islamic state'),
     ('veteran', 'veterans', 'shinseki'),
     ('affordable care act', 'obamacare', 'healthcare', 'health care', 'insurance'),
-    ('ukraine', 'ukrainian', 'crimea')
+    ('ukraine', 'ukrainian', 'crimea'),
+    ('unemployed', 'unemployment')
 ]
     
     #('palestine', 'palestinians'),
